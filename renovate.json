@@ -6,8 +6,32 @@
   "packageRules": [
     {
       "description": "Every fastframe crate comes from the same tag.",
-      "matchPackageNames": ["fastframe-*", "fastframe"],
+      "matchPackageNames": [
+        "fastframe-*",
+        "fastframe"
+      ],
       "groupName": "fastframe"
+    },
+    {
+      "description": "egui's crates release together, and the apps patch them to crmne/egui: a lone crate never builds, and a new minor waits for the fork.",
+      "matchPackageNames": [
+        "egui",
+        "egui-*",
+        "egui_*",
+        "eframe",
+        "ecolor",
+        "emath",
+        "epaint",
+        "epaint_default_fonts"
+      ],
+      "groupName": "egui"
+    },
+    {
+      "description": "winit is patched to crmne/winit apps-0.30 in every app; it moves with the fork.",
+      "matchPackageNames": [
+        "winit"
+      ],
+      "groupName": "winit"
     }
   ]
 }
