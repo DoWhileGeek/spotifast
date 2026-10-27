@@ -213,17 +213,44 @@ mod tests {
 
     #[test]
     fn no_window_points_arm_at_the_store_pack_and_others_at_the_guide() {
-        use fastframe_graphics::Cause;
+        use fastframe_graphics::{Cause, Trouble};
         let english = crate::i18n::Locale::English;
-        let arm = no_window_body(english, Cause::WindowsOnArm, Some(DOWNLOAD_PAGE)).unwrap();
-        assert!(arm.contains("Compatibility Pack"));
-        assert!(arm.contains("Microsoft Store"));
+        let details = "egui_glow requires opengl 2.0+";
+        let arm = no_window_dialog(
+            english,
+            &Trouble::new(
+                "Spotifast",
+                Cause::WindowsOnArm,
+                details,
+                Some(DOWNLOAD_PAGE),
+            ),
+        );
+        assert!(arm.body.contains("Compatibility Pack"));
+        assert!(
+            arm.link
+                .as_deref()
+                .is_some_and(|link| link.starts_with("ms-windows-store:"))
+        );
 
-        let x64 = no_window_body(english, Cause::NoGraphicsDriver, Some(DOWNLOAD_PAGE)).unwrap();
-        assert!(x64.contains("OpenGL 2.0"));
-        assert!(x64.contains("virtual machine"));
-        assert!(x64.contains(DOWNLOAD_PAGE));
-        assert!(!x64.contains("{url}"));
+        let x64 = no_window_dialog(
+            english,
+            &Trouble::new(
+                "Spotifast",
+                Cause::NoGraphicsDriver,
+                details,
+                Some(DOWNLOAD_PAGE),
+            ),
+        );
+        assert_eq!(x64.title, "Spotifast cannot open its window");
+        assert_eq!(x64.link.as_deref(), Some(DOWNLOAD_PAGE));
+        assert!(x64.body.contains("OpenGL 2.0"));
+        assert!(x64.body.contains("virtual machine"));
+        assert!(x64.body.contains(DOWNLOAD_PAGE));
+        assert!(!x64.body.contains("{url}"));
+        assert_eq!(
+            (x64.open_label.as_str(), x64.close_label.as_str()),
+            ("Open page", "Close")
+        );
     }
 
     #[test]
