@@ -5,10 +5,9 @@
   ],
   "packageRules": [
     {
-      "description": "Every fastframe crate comes from the same tag.",
-      "matchPackageNames": [
-        "fastframe-*",
-        "fastframe"
+      "description": "Every fastframe crate comes from the same tag. They are git dependencies, whose package name is the repository URL, so the rule matches the crate names.",
+      "matchDepNames": [
+        "fastframe-*"
       ],
       "groupName": "fastframe"
     },
