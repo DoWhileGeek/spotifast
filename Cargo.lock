@@ -1981,7 +1981,7 @@ source = "git+https://github.com/crmne/fastframe?tag=v0.15.2#4d115b5e5838c207c08
 dependencies = [
  "eframe",
  "log",
- "objc2 0.6.4",
+ "objc2 0.6.5",
  "objc2-app-kit 0.3.2",
  "objc2-foundation 0.3.2",
  "windows-sys 0.60.2",
