@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: Spotifast\n"
 "Report-Msgid-Bugs-To: https://github.com/crmne/spotifast/issues/new?"
 "template=translation.yml\n"
-"POT-Creation-Date: 2026-10-25 23:58+0100\n"
+"POT-Creation-Date: 2026-10-27 03:44+0100\n"
 "PO-Revision-Date: 2026-09-09 13:30+0000\n"
 "Last-Translator: Spotifast contributors\n"
 "Language-Team: Traditional Chinese\n"
@@ -314,7 +314,7 @@ msgid "Recent"
 msgstr "最近播放"
 
 #: src/ui/queue.rs:92 src/ui/queue.rs:241 src/ui/lyrics.rs:78
-#: src/ui/friends.rs:65 src/ui/mod.rs:641
+#: src/ui/friends.rs:65 src/ui/mod.rs:641 src/window.rs:35
 msgid "Close"
 msgstr "關閉"
 
@@ -2148,27 +2148,27 @@ msgctxt "proxy"
 msgid "System"
 msgstr "系統"
 
-#: src/theme.rs:190
+#: src/theme.rs:206
 msgid "Loading local themes…"
 msgstr "正在載入本機主題…"
 
-#: src/theme.rs:193
+#: src/theme.rs:209
 msgid ""
 "The selected theme is unavailable. Keeping the last usable appearance. See "
 "the log for details."
 msgstr "無法使用所選主題，將保留上次可用的外觀。詳情請查看記錄檔。"
 
-#: src/theme.rs:197
+#: src/theme.rs:213
 msgid "The themes folder could not be read. See the log for details."
 msgstr "無法讀取主題資料夾，詳情請查看記錄檔。"
 
-#: src/theme.rs:201
+#: src/theme.rs:217
 msgid ""
 "The themes folder has more than 512 entries. Keep fewer files there to list "
 "the custom palettes."
 msgstr "主題資料夾中的項目超過 512 個。請減少其中的檔案，才能列出自訂色盤。"
 
-#: src/theme.rs:205
+#: src/theme.rs:221
 msgid ""
 "Only 128 custom palettes can be listed. Keep fewer JSON files in the themes "
 "folder to see the rest."
@@ -2176,13 +2176,13 @@ msgstr ""
 "最多只能列出 128 個自訂色盤。請減少主題資料夾中的 JSON 檔案，才能看到其餘色"
 "盤。"
 
-#: src/theme.rs:209
+#: src/theme.rs:225
 msgid ""
 "The Omarchy palette could not be loaded. Keeping the last usable appearance. "
 "See the log for details."
 msgstr "無法載入 Omarchy 調色盤，將保留上次可用的外觀。詳情請查看記錄檔。"
 
-#: src/theme.rs:213
+#: src/theme.rs:229
 msgid ""
 "Custom themes could not be loaded. Run spotifast reload-themes to try again."
 msgstr "無法載入自訂主題。請執行 spotifast reload-themes 再試一次。"
@@ -3555,11 +3555,15 @@ msgstr "晚安"
 msgid "On Wayland, use your desktop's Keep Above shortcut or window rule."
 msgstr "在 Wayland 上，請使用桌面環境的「最上層顯示」快捷鍵或視窗規則。"
 
-#: src/window.rs:39
+#: src/window.rs:31
 msgid "Spotifast cannot open its window"
 msgstr "Spotifast 無法開啟視窗"
 
-#: src/window.rs:45
+#: src/window.rs:34
+msgid "Open page"
+msgstr "開啟頁面"
+
+#: src/window.rs:51
 msgid ""
 "On Windows on ARM, the OpenGL that Spotifast draws with comes from "
 "Microsoft's OpenCL, OpenGL & Vulkan Compatibility Pack. Open its Microsoft "
@@ -3571,7 +3575,7 @@ msgstr ""
 
 #. Translators: Keep {url} exactly as written. It becomes the address
 #. of the Spotifast download page.
-#: src/window.rs:55
+#: src/window.rs:58
 #, rust-format
 msgid ""
 "Spotifast needs a graphics driver with OpenGL 2.0 or newer, and this PC or "

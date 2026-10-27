@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: Spotifast\n"
 "Report-Msgid-Bugs-To: https://github.com/crmne/spotifast/issues/new?"
 "template=translation.yml\n"
-"POT-Creation-Date: 2026-10-25 23:58+0100\n"
+"POT-Creation-Date: 2026-10-27 03:44+0100\n"
 "PO-Revision-Date: 2026-09-23 20:00+0000\n"
 "Last-Translator: Spotifast contributors\n"
 "Language-Team: European Portuguese\n"
@@ -318,7 +318,7 @@ msgid "Recent"
 msgstr "Recentes"
 
 #: src/ui/queue.rs:92 src/ui/queue.rs:241 src/ui/lyrics.rs:78
-#: src/ui/friends.rs:65 src/ui/mod.rs:641
+#: src/ui/friends.rs:65 src/ui/mod.rs:641 src/window.rs:35
 msgid "Close"
 msgstr "Fechar"
 
@@ -2235,11 +2235,11 @@ msgctxt "proxy"
 msgid "System"
 msgstr "Sistema"
 
-#: src/theme.rs:190
+#: src/theme.rs:206
 msgid "Loading local themes…"
 msgstr "A carregar temas locais…"
 
-#: src/theme.rs:193
+#: src/theme.rs:209
 msgid ""
 "The selected theme is unavailable. Keeping the last usable appearance. See "
 "the log for details."
@@ -2247,12 +2247,12 @@ msgstr ""
 "O tema selecionado não está disponível. Mantém-se o último aspeto "
 "utilizável. Consulta o registo para mais detalhes."
 
-#: src/theme.rs:197
+#: src/theme.rs:213
 msgid "The themes folder could not be read. See the log for details."
 msgstr ""
 "Não foi possível ler a pasta de temas. Consulta o registo para mais detalhes."
 
-#: src/theme.rs:201
+#: src/theme.rs:217
 msgid ""
 "The themes folder has more than 512 entries. Keep fewer files there to list "
 "the custom palettes."
@@ -2260,7 +2260,7 @@ msgstr ""
 "A pasta de temas tem mais de 512 entradas. Mantém menos ficheiros lá para "
 "listar as paletas personalizadas."
 
-#: src/theme.rs:205
+#: src/theme.rs:221
 msgid ""
 "Only 128 custom palettes can be listed. Keep fewer JSON files in the themes "
 "folder to see the rest."
@@ -2268,7 +2268,7 @@ msgstr ""
 "Só é possível listar 128 paletas personalizadas. Mantém menos ficheiros JSON "
 "na pasta de temas para veres as restantes."
 
-#: src/theme.rs:209
+#: src/theme.rs:225
 msgid ""
 "The Omarchy palette could not be loaded. Keeping the last usable appearance. "
 "See the log for details."
@@ -2276,7 +2276,7 @@ msgstr ""
 "Não foi possível carregar a paleta do Omarchy. Mantém-se o último aspeto "
 "utilizável. Consulta o registo para mais detalhes."
 
-#: src/theme.rs:213
+#: src/theme.rs:229
 msgid ""
 "Custom themes could not be loaded. Run spotifast reload-themes to try again."
 msgstr ""
@@ -3680,11 +3680,15 @@ msgstr ""
 "No Wayland, usa o atalho ou a regra de janela “Manter acima” do teu ambiente "
 "de trabalho."
 
-#: src/window.rs:39
+#: src/window.rs:31
 msgid "Spotifast cannot open its window"
 msgstr "O Spotifast não consegue abrir a janela"
 
-#: src/window.rs:45
+#: src/window.rs:34
+msgid "Open page"
+msgstr "Abrir página"
+
+#: src/window.rs:51
 msgid ""
 "On Windows on ARM, the OpenGL that Spotifast draws with comes from "
 "Microsoft's OpenCL, OpenGL & Vulkan Compatibility Pack. Open its Microsoft "
@@ -3696,7 +3700,7 @@ msgstr ""
 
 #. Translators: Keep {url} exactly as written. It becomes the address
 #. of the Spotifast download page.
-#: src/window.rs:55
+#: src/window.rs:58
 #, rust-format
 msgid ""
 "Spotifast needs a graphics driver with OpenGL 2.0 or newer, and this PC or "

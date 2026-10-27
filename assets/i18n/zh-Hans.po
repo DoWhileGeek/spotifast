@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: Spotifast\n"
 "Report-Msgid-Bugs-To: https://github.com/crmne/spotifast/issues/new?"
 "template=translation.yml\n"
-"POT-Creation-Date: 2026-10-25 23:58+0100\n"
+"POT-Creation-Date: 2026-10-27 03:44+0100\n"
 "PO-Revision-Date: 2026-09-09 13:30+0000\n"
 "Last-Translator: Spotifast contributors\n"
 "Language-Team: Simplified Chinese\n"
@@ -314,7 +314,7 @@ msgid "Recent"
 msgstr "最近播放"
 
 #: src/ui/queue.rs:92 src/ui/queue.rs:241 src/ui/lyrics.rs:78
-#: src/ui/friends.rs:65 src/ui/mod.rs:641
+#: src/ui/friends.rs:65 src/ui/mod.rs:641 src/window.rs:35
 msgid "Close"
 msgstr "关闭"
 
@@ -2145,40 +2145,40 @@ msgctxt "proxy"
 msgid "System"
 msgstr "系统"
 
-#: src/theme.rs:190
+#: src/theme.rs:206
 msgid "Loading local themes…"
 msgstr "正在加载本地主题…"
 
-#: src/theme.rs:193
+#: src/theme.rs:209
 msgid ""
 "The selected theme is unavailable. Keeping the last usable appearance. See "
 "the log for details."
 msgstr "所选主题不可用，将保留上次可用的外观。详情请查看日志。"
 
-#: src/theme.rs:197
+#: src/theme.rs:213
 msgid "The themes folder could not be read. See the log for details."
 msgstr "无法读取主题文件夹，详情请查看日志。"
 
-#: src/theme.rs:201
+#: src/theme.rs:217
 msgid ""
 "The themes folder has more than 512 entries. Keep fewer files there to list "
 "the custom palettes."
 msgstr "主题文件夹中的项目超过 512 个。请减少其中的文件以列出自定义配色。"
 
-#: src/theme.rs:205
+#: src/theme.rs:221
 msgid ""
 "Only 128 custom palettes can be listed. Keep fewer JSON files in the themes "
 "folder to see the rest."
 msgstr ""
 "最多只能列出 128 个自定义配色。请减少主题文件夹中的 JSON 文件以查看其余配色。"
 
-#: src/theme.rs:209
+#: src/theme.rs:225
 msgid ""
 "The Omarchy palette could not be loaded. Keeping the last usable appearance. "
 "See the log for details."
 msgstr "无法加载 Omarchy 调色板，将保留上次可用的外观。详情请查看日志。"
 
-#: src/theme.rs:213
+#: src/theme.rs:229
 msgid ""
 "Custom themes could not be loaded. Run spotifast reload-themes to try again."
 msgstr "无法加载自定义主题。请运行 spotifast reload-themes 重试。"
@@ -3550,11 +3550,15 @@ msgstr "晚上好"
 msgid "On Wayland, use your desktop's Keep Above shortcut or window rule."
 msgstr "在 Wayland 上，请使用桌面环境的“保持在最上层”快捷键或窗口规则。"
 
-#: src/window.rs:39
+#: src/window.rs:31
 msgid "Spotifast cannot open its window"
 msgstr "Spotifast 无法打开窗口"
 
-#: src/window.rs:45
+#: src/window.rs:34
+msgid "Open page"
+msgstr "打开页面"
+
+#: src/window.rs:51
 msgid ""
 "On Windows on ARM, the OpenGL that Spotifast draws with comes from "
 "Microsoft's OpenCL, OpenGL & Vulkan Compatibility Pack. Open its Microsoft "
@@ -3566,7 +3570,7 @@ msgstr ""
 
 #. Translators: Keep {url} exactly as written. It becomes the address
 #. of the Spotifast download page.
-#: src/window.rs:55
+#: src/window.rs:58
 #, rust-format
 msgid ""
 "Spotifast needs a graphics driver with OpenGL 2.0 or newer, and this PC or "
