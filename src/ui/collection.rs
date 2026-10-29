@@ -3725,9 +3725,9 @@ mod tests {
         }
     }
 
-    /// Select all takes every song the list shows, Copy hands the picked
-    /// songs on in the list's order, and Paste offers an editable playlist
-    /// the clipboard's text. A focused text field keeps all three keys.
+    /// Selection is kept by display row, so a plays sort drops it when its
+    /// own songs' counts arrive or change and move rows, and keeps it when
+    /// counts arrive for songs elsewhere. Other sorts ignore counts.
     #[test]
     fn a_plays_sort_drops_its_selection_only_when_its_own_counts_change() {
         let command = if cfg!(target_os = "macos") {
@@ -3795,6 +3795,9 @@ mod tests {
         }
     }
 
+    /// Select all takes every song the list shows, Copy hands the picked
+    /// songs on in the list's order, and Paste offers an editable playlist
+    /// the clipboard's text. A focused text field keeps all three keys.
     #[test]
     fn select_all_copy_and_paste_act_on_the_song_list() {
         // The modifiers as the platform reports its command key.
