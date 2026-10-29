@@ -511,8 +511,8 @@ pub struct TableCache {
     pub user_names_revision: u64,
     /// Which scan of the local files folder decided the playable rows.
     pub local_files: usize,
-    /// The play counts a plays sort ordered by, so it redoes itself as
-    /// counts arrive or change.
+    /// The play counts a plays sort ordered by, from `plays_order`, so it
+    /// redoes itself as counts arrive or change.
     pub plays_order: u64,
     pub visible: Arc<[usize]>,
     pub view_uris: Option<Arc<[String]>>,
@@ -626,6 +626,7 @@ pub fn prepare_table_view(
     } = view;
     let cache_id = egui::Id::new("table-view-cache").with(page);
     let cached = ui.data(|d| d.get_temp::<Arc<TableCache>>(cache_id));
+    let order = plays_order(app, items, sort);
 
     let is_valid = cached.as_ref().is_some_and(|c| {
         c.sort == sort
@@ -634,7 +635,7 @@ pub fn prepare_table_view(
             && c.items_revision == items_revision
             && c.user_names_revision == app.user_names_revision
             && c.local_files == local_files_scan(app)
-            && c.plays_order == plays_order(app, sort)
+            && c.plays_order == order
     });
 
     if let Some(entry) = cached.filter(|_| is_valid) {
@@ -661,7 +662,7 @@ pub fn prepare_table_view(
             items_revision,
             user_names_revision: app.user_names_revision,
             local_files: local_files_scan(app),
-            plays_order: plays_order(app, sort),
+            plays_order: order,
             visible: visible.into(),
             view_uris,
             plays_shown_rows,
@@ -827,7 +828,7 @@ fn table_contents(app: &mut App, ui: &mut egui::Ui, table: Table<'_>) {
         entry.visible.len(),
         table.row_offset,
         table.items_revision,
-        plays_order(app, sort)
+        entry.plays_order
     );
     let item_index = |row: usize| -> Option<usize> {
         if let Some(page) = finite {
@@ -1344,15 +1345,20 @@ fn sort_by_album(visible: &mut [usize], ascending: bool, items: &[TableItem]) {
     }
 }
 
-/// Which play counts a view's order depends on: their revision when it
-/// sorts by plays, else nothing, so counts arriving for another album leave
-/// other views and their selections alone.
-fn plays_order(app: &App, sort: Option<TableSort>) -> u64 {
-    if sort.is_some_and(|sort| sort.column == SortColumn::Plays) {
-        app.play_counts_revision
-    } else {
-        0
+/// A fingerprint of the play counts a view's order depends on: those of
+/// its own songs when it sorts by plays, else nothing. Counts that arrive
+/// or change for these songs reorder the view; counts for other songs leave
+/// it and its selection alone.
+fn plays_order(app: &App, items: &[TableItem], sort: Option<TableSort>) -> u64 {
+    use std::hash::{Hash, Hasher};
+    if !sort.is_some_and(|sort| sort.column == SortColumn::Plays) {
+        return 0;
     }
+    let mut hasher = std::hash::DefaultHasher::new();
+    for (item, _, _) in items {
+        app.play_counts.get(item.uri()).hash(&mut hasher);
+    }
+    hasher.finish()
 }
 
 /// The sort after a click on `column`'s heading: ascending, descending,
@@ -3718,7 +3724,7 @@ mod tests {
     /// songs on in the list's order, and Paste offers an editable playlist
     /// the clipboard's text. A focused text field keeps all three keys.
     #[test]
-    fn arriving_play_counts_clear_a_selection_only_under_a_plays_sort() {
+    fn a_plays_sort_drops_its_selection_only_when_its_own_counts_change() {
         let command = if cfg!(target_os = "macos") {
             egui::Modifiers::MAC_CMD | egui::Modifiers::COMMAND
         } else {
@@ -3748,9 +3754,18 @@ mod tests {
             table.frame(select_all());
             assert!(table.app.picked_rows(&page).is_some(), "{column:?}");
 
-            // #when play counts arrive
+            // #when counts arrive for a song on another page
+            table
+                .app
+                .play_counts
+                .insert("spotify:track:other".into(), 3);
+            table.frame(vec![]);
+
+            // #then the selection stays
+            assert!(table.app.picked_rows(&page).is_some(), "{column:?}");
+
+            // #when counts arrive for a song in this list
             table.app.play_counts.insert("spotify:track:t_3".into(), 7);
-            table.app.play_counts_revision += 1;
             table.frame(vec![]);
 
             // #then only the plays sort, whose rows moved, drops the
@@ -3759,6 +3774,18 @@ mod tests {
                 table.app.picked_rows(&page).is_none(),
                 cleared,
                 "{column:?}"
+            );
+
+            // #when a later answer replaces a count without adding one
+            table.frame(select_all());
+            table.app.play_counts.insert("spotify:track:t_3".into(), 8);
+            table.frame(vec![]);
+
+            // #then a plays sort still notices
+            assert_eq!(
+                table.app.picked_rows(&page).is_none(),
+                cleared,
+                "{column:?} replaced"
             );
         }
     }

@@ -720,9 +720,6 @@ pub struct App {
     /// How often Spotify says each song was played, by track URI, for the
     /// albums and artists in `play_count_reads`.
     pub play_counts: HashMap<String, u64>,
-    /// Bumped whenever `play_counts` changes, so a list sorted by plays
-    /// reorders even when an answer replaces counts it already had.
-    pub play_counts_revision: u64,
     /// Albums and artists whose play counts were asked for, by URI.
     pub play_count_reads: HashMap<String, PlayCountRead>,
     /// User ids resolved to avatar picture urls, asked for alongside the
@@ -1283,7 +1280,6 @@ impl App {
                 .collect(),
             user_names: HashMap::new(),
             play_counts: HashMap::new(),
-            play_counts_revision: 0,
             play_count_reads: HashMap::new(),
             user_names_revision: 0,
             user_images: HashMap::new(),
@@ -6585,7 +6581,6 @@ impl App {
             // An answer without a single count has nothing to show.
             Ok(counts) if !counts.is_empty() => {
                 self.play_counts.extend(counts);
-                self.play_counts_revision = self.play_counts_revision.wrapping_add(1);
                 PlayCountRead::Answered
             }
             Ok(_) | Err(_) => PlayCountRead::Failed(Instant::now()),
@@ -25244,21 +25239,9 @@ mod tests {
         assert!(app.has_play_counts(album));
         assert_eq!(app.play_counts.get("spotify:track:t"), Some(&5));
 
-        // A later answer that only replaces a count still moves the
-        // revision, so a list sorted by plays reorders.
-        let revision = app.play_counts_revision;
-        app.receive_play_counts(
-            "spotify:artist:a".into(),
-            Ok(HashMap::from([("spotify:track:t".to_string(), 6)])),
-        );
-        assert_eq!(app.play_counts.len(), 1);
-        assert_ne!(app.play_counts_revision, revision);
-
         // An answer with no counts shows no column.
-        let revision = app.play_counts_revision;
         app.receive_play_counts("spotify:artist:b".into(), Ok(HashMap::new()));
         assert!(!app.has_play_counts("spotify:artist:b"));
-        assert_eq!(app.play_counts_revision, revision);
     }
 
     #[test]
