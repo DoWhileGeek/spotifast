@@ -611,6 +611,9 @@ fn local_files_scan(app: &App) -> usize {
         .map_or(0, |(_, uris)| Arc::as_ptr(uris) as usize)
 }
 
+/// The page's rows as `view` shows them, cached per page and rebuilt only
+/// when the sort, filter, items, user names, local files, or the play
+/// counts a plays sort depends on change.
 pub fn prepare_table_view(
     ui: &mut egui::Ui,
     app: &App,
@@ -717,6 +720,8 @@ pub fn table(app: &mut App, ui: &mut egui::Ui, table: Table<'_>) {
     }
 }
 
+/// Draws the song table: its header, whose headings change the page's
+/// sort, and the rows in the order the view presents them.
 fn table_contents(app: &mut App, ui: &mut egui::Ui, table: Table<'_>) {
     let palette = app.palette;
     let locale = app.locale;
