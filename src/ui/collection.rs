@@ -1,6 +1,7 @@
 //! Playlist, album, and Liked Songs pages: a hero, actions, and a track table.
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use egui::{Align, Layout, Rect, Sense, Vec2, pos2, vec2};
@@ -510,6 +511,9 @@ pub struct TableCache {
     pub user_names_revision: u64,
     /// Which scan of the local files folder decided the playable rows.
     pub local_files: usize,
+    /// How many play counts were known, so a plays sort redoes itself as
+    /// counts arrive.
+    pub play_counts: usize,
     pub visible: Arc<[usize]>,
     pub view_uris: Option<Arc<[String]>>,
     pub plays_shown_rows: bool,
@@ -630,12 +634,13 @@ pub fn prepare_table_view(
             && c.items_revision == items_revision
             && c.user_names_revision == app.user_names_revision
             && c.local_files == local_files_scan(app)
+            && c.play_counts == app.play_counts.len()
     });
 
     if let Some(entry) = cached.filter(|_| is_valid) {
         entry
     } else {
-        let visible = view_indices(items, needle, sort);
+        let visible = view_indices(items, &app.play_counts, needle, sort);
         let mut view_positions = Vec::new();
         let view_uris = (sort.is_some() || !needle.is_empty() || plays_shown_rows).then(|| {
             let mut uris = Vec::new();
@@ -656,6 +661,7 @@ pub fn prepare_table_view(
             items_revision,
             user_names_revision: app.user_names_revision,
             local_files: local_files_scan(app),
+            play_counts: app.play_counts.len(),
             visible: visible.into(),
             view_uris,
             plays_shown_rows,
@@ -752,23 +758,7 @@ fn table_contents(app: &mut App, ui: &mut egui::Ui, table: Table<'_>) {
             sort,
         )
     {
-        // Ascending, descending, back to the list's own order.
-        let next = match sort {
-            Some(sort) if sort.column == column && sort.ascending => Some(TableSort {
-                column,
-                ascending: false,
-            }),
-            Some(sort) if sort.column == column => None,
-            // The # stands for the list's own order: from any other sort
-            // it returns there rather than layering a sort of its own.
-            Some(_) if column == SortColumn::Index => None,
-            // Ascending by # is the list's own order, a click that would
-            // change nothing; the first click on # reverses instead.
-            _ => Some(TableSort {
-                column,
-                ascending: column != SortColumn::Index,
-            }),
-        };
+        let next = next_sort(sort, column);
         match next {
             Some(sort) => {
                 app.table_sorts.insert(table.page.clone(), sort);
@@ -1352,9 +1342,37 @@ fn sort_by_album(visible: &mut [usize], ascending: bool, items: &[TableItem]) {
     }
 }
 
+/// The sort after a click on `column`'s heading: ascending, descending,
+/// then back to the list's own order. Plays start with the most played.
+fn next_sort(sort: Option<TableSort>, column: SortColumn) -> Option<TableSort> {
+    let first_ascending = column != SortColumn::Plays;
+    match sort {
+        Some(sort) if sort.column == column && sort.ascending != first_ascending => None,
+        Some(sort) if sort.column == column => Some(TableSort {
+            column,
+            ascending: !sort.ascending,
+        }),
+        // The # stands for the list's own order: from any other sort
+        // it returns there rather than layering a sort of its own.
+        Some(_) if column == SortColumn::Index => None,
+        // Ascending by # is the list's own order, a click that would
+        // change nothing; the first click on # reverses instead.
+        _ => Some(TableSort {
+            column,
+            ascending: first_ascending && column != SortColumn::Index,
+        }),
+    }
+}
+
 /// The indices of `items` as a view presents them: filtered by `needle`
-/// (already lowercased), then ordered by `sort`.
-fn view_indices(items: &[TableItem], needle: &str, sort: Option<TableSort>) -> Vec<usize> {
+/// (already lowercased), then ordered by `sort`. Sorting by plays reads
+/// `play_counts`; a song without a count sorts after every counted one.
+fn view_indices(
+    items: &[TableItem],
+    play_counts: &HashMap<String, u64>,
+    needle: &str,
+    sort: Option<TableSort>,
+) -> Vec<usize> {
     let mut visible: Vec<usize> = items
         .iter()
         .enumerate()
@@ -1391,6 +1409,18 @@ fn view_indices(items: &[TableItem], needle: &str, sort: Option<TableSort>) -> V
             SortColumn::AddedBy => sort_by_text_key(&mut visible, sort.ascending, |index| {
                 items[index].2.as_deref().unwrap_or_default().to_lowercase()
             }),
+            SortColumn::Plays => visible.sort_by_key(|&index| {
+                let count = play_counts.get(items[index].0.uri()).copied();
+                let count_key = count.unwrap_or_default();
+                (
+                    count.is_none(),
+                    if sort.ascending {
+                        count_key
+                    } else {
+                        u64::MAX - count_key
+                    },
+                )
+            }),
             SortColumn::Added | SortColumn::Index | SortColumn::Duration => {
                 visible.sort_by(|a, b| {
                     let ordering = match sort.column {
@@ -1399,7 +1429,7 @@ fn view_indices(items: &[TableItem], needle: &str, sort: Option<TableSort>) -> V
                         SortColumn::Duration => {
                             items[*a].0.duration_ms().cmp(&items[*b].0.duration_ms())
                         }
-                        _ => unreachable!("text columns are handled above"),
+                        _ => unreachable!("text and plays columns are handled above"),
                     };
                     if sort.ascending {
                         ordering
@@ -2903,6 +2933,7 @@ mod tests {
         assert_eq!(
             view_indices(
                 &items,
+                &HashMap::new(),
                 "",
                 Some(TableSort {
                     column: SortColumn::Title,
@@ -3198,19 +3229,19 @@ mod tests {
         let items = make_test_tracks();
 
         // 1. Unfiltered and unsorted: natural order
-        let visible = view_indices(&items, "", None);
+        let visible = view_indices(&items, &HashMap::new(), "", None);
         assert_eq!(visible, vec![0, 1, 2, 3]);
 
         // 2. Filter by track name
-        let visible = view_indices(&items, "bohemian", None);
+        let visible = view_indices(&items, &HashMap::new(), "bohemian", None);
         assert_eq!(visible, vec![0]);
 
         // 3. Filter by artist name
-        let visible = view_indices(&items, "soda", None);
+        let visible = view_indices(&items, &HashMap::new(), "soda", None);
         assert_eq!(visible, vec![1]);
 
         // 4. Filter by album name
-        let visible = view_indices(&items, "mutter", None);
+        let visible = view_indices(&items, &HashMap::new(), "mutter", None);
         assert_eq!(visible, vec![3]);
 
         // 5. Sort descending by title
@@ -3218,8 +3249,58 @@ mod tests {
             column: SortColumn::Title,
             ascending: false,
         });
-        let visible = view_indices(&items, "", sort);
+        let visible = view_indices(&items, &HashMap::new(), "", sort);
         assert_eq!(visible, vec![3, 2, 1, 0]);
+    }
+
+    #[test]
+    fn heading_clicks_cycle_sorts_and_plays_start_with_the_most_played() {
+        let cycle = |column| {
+            let mut sort = None;
+            let mut seen = Vec::new();
+            for _ in 0..3 {
+                sort = next_sort(sort, column);
+                seen.push(sort.map(|sort| sort.ascending));
+            }
+            seen
+        };
+        assert_eq!(cycle(SortColumn::Title), [Some(true), Some(false), None]);
+        assert_eq!(cycle(SortColumn::Plays), [Some(false), Some(true), None]);
+        assert_eq!(cycle(SortColumn::Index), [Some(false), None, Some(false)]);
+        let by_title = Some(TableSort {
+            column: SortColumn::Title,
+            ascending: true,
+        });
+        assert_eq!(
+            next_sort(by_title, SortColumn::Plays),
+            Some(TableSort {
+                column: SortColumn::Plays,
+                ascending: false,
+            })
+        );
+        assert_eq!(next_sort(by_title, SortColumn::Index), None);
+    }
+
+    #[test]
+    fn plays_sort_orders_by_count_and_puts_uncounted_songs_last() {
+        let items = make_test_tracks();
+        let plays: HashMap<String, u64> = [("t_0", 5), ("t_1", 900), ("t_3", 40)]
+            .into_iter()
+            .map(|(id, count)| (format!("spotify:track:{id}"), count))
+            .collect();
+        let sorted = |ascending| {
+            view_indices(
+                &items,
+                &plays,
+                "",
+                Some(TableSort {
+                    column: SortColumn::Plays,
+                    ascending,
+                }),
+            )
+        };
+        assert_eq!(sorted(false), vec![1, 3, 0, 2]);
+        assert_eq!(sorted(true), vec![0, 3, 1, 2]);
     }
 
     #[test]
@@ -3238,6 +3319,7 @@ mod tests {
             assert_eq!(
                 view_indices(
                     &items,
+                    &HashMap::new(),
                     "",
                     Some(TableSort {
                         column,
@@ -3250,6 +3332,7 @@ mod tests {
             assert_eq!(
                 view_indices(
                     &items,
+                    &HashMap::new(),
                     "",
                     Some(TableSort {
                         column,
@@ -3289,6 +3372,7 @@ mod tests {
         let sorted = |ascending| {
             view_indices(
                 &items,
+                &HashMap::new(),
                 "",
                 Some(TableSort {
                     column: SortColumn::Album,
@@ -3334,6 +3418,7 @@ mod tests {
                 assert_eq!(
                     view_indices(
                         &items,
+                        &HashMap::new(),
                         "",
                         Some(TableSort {
                             column: SortColumn::Album,
@@ -3375,6 +3460,7 @@ mod tests {
             items_revision: 5,
             user_names_revision: 2,
             local_files: 0,
+            play_counts: 0,
             visible: Arc::new([2]),
             view_uris: Some(Arc::new(["spotify:track:t_2".to_string()])),
             plays_shown_rows: false,
