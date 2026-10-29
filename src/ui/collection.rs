@@ -511,9 +511,9 @@ pub struct TableCache {
     pub user_names_revision: u64,
     /// Which scan of the local files folder decided the playable rows.
     pub local_files: usize,
-    /// How many play counts were known, so a plays sort redoes itself as
-    /// counts arrive.
-    pub play_counts: usize,
+    /// The play counts a plays sort ordered by, so it redoes itself as
+    /// counts arrive or change.
+    pub plays_order: u64,
     pub visible: Arc<[usize]>,
     pub view_uris: Option<Arc<[String]>>,
     pub plays_shown_rows: bool,
@@ -634,7 +634,7 @@ pub fn prepare_table_view(
             && c.items_revision == items_revision
             && c.user_names_revision == app.user_names_revision
             && c.local_files == local_files_scan(app)
-            && c.play_counts == app.play_counts.len()
+            && c.plays_order == plays_order(app, sort)
     });
 
     if let Some(entry) = cached.filter(|_| is_valid) {
@@ -661,7 +661,7 @@ pub fn prepare_table_view(
             items_revision,
             user_names_revision: app.user_names_revision,
             local_files: local_files_scan(app),
-            play_counts: app.play_counts.len(),
+            plays_order: plays_order(app, sort),
             visible: visible.into(),
             view_uris,
             plays_shown_rows,
@@ -821,11 +821,13 @@ fn table_contents(app: &mut App, ui: &mut egui::Ui, table: Table<'_>) {
     });
     // Selection uses display indices. Clear it when the view or items change,
     // including a refresh that replaces songs without changing the row count.
+    // Arriving play counts reorder a plays sort, so they count too.
     let view = format!(
-        "{sort:?}|{needle}|{}|{}|{}",
+        "{sort:?}|{needle}|{}|{}|{}|{}",
         entry.visible.len(),
         table.row_offset,
-        table.items_revision
+        table.items_revision,
+        plays_order(app, sort)
     );
     let item_index = |row: usize| -> Option<usize> {
         if let Some(page) = finite {
@@ -1339,6 +1341,17 @@ fn sort_by_album(visible: &mut [usize], ascending: bool, items: &[TableItem]) {
     });
     for (slot, key) in visible.iter_mut().zip(keyed) {
         *slot = key.4;
+    }
+}
+
+/// Which play counts a view's order depends on: their revision when it
+/// sorts by plays, else nothing, so counts arriving for another album leave
+/// other views and their selections alone.
+fn plays_order(app: &App, sort: Option<TableSort>) -> u64 {
+    if sort.is_some_and(|sort| sort.column == SortColumn::Plays) {
+        app.play_counts_revision
+    } else {
+        0
     }
 }
 
@@ -3460,7 +3473,7 @@ mod tests {
             items_revision: 5,
             user_names_revision: 2,
             local_files: 0,
-            play_counts: 0,
+            plays_order: 0,
             visible: Arc::new([2]),
             view_uris: Some(Arc::new(["spotify:track:t_2".to_string()])),
             plays_shown_rows: false,
@@ -3704,6 +3717,52 @@ mod tests {
     /// Select all takes every song the list shows, Copy hands the picked
     /// songs on in the list's order, and Paste offers an editable playlist
     /// the clipboard's text. A focused text field keeps all three keys.
+    #[test]
+    fn arriving_play_counts_clear_a_selection_only_under_a_plays_sort() {
+        let command = if cfg!(target_os = "macos") {
+            egui::Modifiers::MAC_CMD | egui::Modifiers::COMMAND
+        } else {
+            egui::Modifiers::CTRL | egui::Modifiers::COMMAND
+        };
+        let select_all = || {
+            vec![egui::Event::Key {
+                key: egui::Key::A,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers: command,
+            }]
+        };
+        let page = Page::Playlist("test".into());
+        for (column, cleared) in [(SortColumn::Plays, true), (SortColumn::Title, false)] {
+            // #given a sorted list with every row selected, before counts
+            let mut table = KeyboardTable::new();
+            table.app.table_sorts.insert(
+                page.clone(),
+                TableSort {
+                    column,
+                    ascending: false,
+                },
+            );
+            table.frame(vec![]);
+            table.frame(select_all());
+            assert!(table.app.picked_rows(&page).is_some(), "{column:?}");
+
+            // #when play counts arrive
+            table.app.play_counts.insert("spotify:track:t_3".into(), 7);
+            table.app.play_counts_revision += 1;
+            table.frame(vec![]);
+
+            // #then only the plays sort, whose rows moved, drops the
+            // selection made by position
+            assert_eq!(
+                table.app.picked_rows(&page).is_none(),
+                cleared,
+                "{column:?}"
+            );
+        }
+    }
+
     #[test]
     fn select_all_copy_and_paste_act_on_the_song_list() {
         // The modifiers as the platform reports its command key.
